@@ -1,0 +1,16 @@
+{
+  "name": "trellato",
+  "version": "0.0.2",
+  "description": "a Trello board multiplexer for sprint-planning awesomeness",
+  "main": "trellato.config.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NolanWoods/trellato"
+  },
+  "author": "Nolan Woods",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/NolanWoods/trellato/issues"
+  },
+  "homepage": "https://github.com/NolanWoods/trellato"
+}
