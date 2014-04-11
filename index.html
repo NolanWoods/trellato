@@ -14,12 +14,16 @@
 </head><body ng-controller='mainCtrl'>
 	<button ng-hide='isLoggedIn' ng-click='login()'>Connect to Trello</button>
 	<div ng-if='isLoggedIn'>
-	<select ng-model='selectedBoard'
-	  ng-options='b.id as b.name for b in sprintBoards'
-	  ng-change='selectBoard(selectedBoard)'
-	>
-	  <option style="display:none" disabled value="">
-	    Storyboard...</option>
-	</select>
+	<div>		
+		<select ng-model='selectedBoard'
+		  ng-options='b.id as b.name for b in sprintBoards'
+		  ng-change='selectBoard(selectedBoard)'>
+		  <option style="display:none" disabled value="">
+		    Storyboard...</option>
+		</select>
+		<label><input type="checkbox" ng-model='enableStacking'>
+			Enable Collapsifying
+		</label>
+	</div>
     <trellable>
 </body></html>
