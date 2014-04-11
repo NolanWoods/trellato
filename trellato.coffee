@@ -7,8 +7,7 @@ dictOf = (collection, key, values) -> _(collection).indexBy(key).mapValues(value
 
 trellato = (angular.module 'trellato', [])
 
-trellato.value('global', {
-  taskLists: ['not started', 'in progress', 'ready for dev review', 'outstanding bugs', 'ready to test', 'done'] })
+trellato.value('global', {})
 
 trellato.factory 'getConfig', ($http, $q, global) ->
 	deferred = $q.defer()
@@ -34,12 +33,15 @@ trellato.service 'trello', ($q, loadTrello) ->
 		deferred.promise
 
 	
-#	(url) -> deferredTrello.promise.then (resolvedTrello) ->
-#		deferredGet = $q.defer()		
-#		resolvedTrello.get url, (data) -> deferredGet.resolve data
-#		deferredGet.promise
+trellato.factory('getLists', (global) -> (board) ->
+	for list in _.sortBy board.lists, 'pos'
+		list.cards = for card in board.cards when card.idList == list.id
+			card.boardId = global.boardIds[shortUrlOf(card.desc)] if card.desc?
+			card
+		list
+)
 
-trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global) ->
+trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global, getLists) ->
 	onSuccess = -> 
 		$scope.isLoggedIn = true
 		(trello "organizations/#{ global.orgId }/boards").then((boards) ->
@@ -49,7 +51,7 @@ trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global) ->
 				{id: b.id, name: b.name}
 			
 			_.each boards, (board) -> board.url = shortUrlOf board.url      
-			$scope.boardIds = dictOf boards, 'url', 'id'
+			global.boardIds = dictOf boards, 'url', 'id'
 
 			# select the latest sprint board
 			$scope.selectBoard $scope.selectedBoard = 
@@ -61,11 +63,7 @@ trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global) ->
 
 	$scope.selectBoard = (boardId) -> 
 		Trello.get "boards/#{ boardId }?#{ boardParams }&members=all", (board) ->
-			$scope.storyLists = for list in _.sortBy board.lists, 'pos'
-				list.storyCards = for card in board.cards when card.idList == list.id
-					card.boardId = $scope.boardIds[shortUrlOf(card.desc)] if card.desc?
-					card
-				list
+			$scope.storyLists = getLists board
 			global.members = _.indexBy board.members, 'id'
 			$scope.$apply()
 
@@ -74,40 +72,37 @@ trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global) ->
 	# try to automatically connect to trello with saved cookie
 	loadTrello.then (Trello) -> 
 		Trello.authorize {interactive: false, success: onSuccess}
+
+
 trellato.directive('trellable', () -> {
-  template: 
-    '''
-      <tr>
-        <th></th>
-        <th ng-repeat='list in global.taskLists' ng-bind='list'></th>
-      </tr>
-      <tr ng-repeat-start='list in storyLists'>
-        <th>{{list.name}} ({{list.storyCards.length}})</th>
-      </tr>
-      <tr ng-repeat='story in list.storyCards'
-        story='story'
-      ></tr>
-      <tr ng-repeat-end></tr>
-    '''  
+	restrict: 'E',
+	template: '''
+		<div class='storylist' ng-repeat='list in storyLists'>
+			<div class='listname'>{{list.name}} ({{list.cards.length}})</div>
+			<div class='listcards'>
+				<div ng-repeat='story in list.cards' ng-class='{storyrow: story.boardId}' story='story'></div>
+			</div>
+			<div style='clear: left'></div>
+		</div>'''  
 })
 
 trellato.directive('story', () -> {
-  scope: { story: '=' }
-  template: 
-    '''
-      <td><div card='story'></div></td>
-      <td ng-repeat='list in global.taskLists'>
-        <div ng-repeat='task in tasks[list]' card='task'></div>
-      </td>
-    '''
-  controller: ($scope, global) ->
-    $scope.global = global
+  scope: { story: '=' },
+  template: '''
+	  		<div class='story'><div card='story'></div></div>
+			<div class='tasklist' ng-repeat='list in taskLists'>
+				<div class='listname'>{{list.name}}</div>
+				<div class='listcards'>
+					<div ng-repeat='card in list.cards' card='card'></div>
+				</div>
+				<div style="height: 1px; width: 100%;"></div>
+			</div>
+			<div style='clear: left'></div>
+		'''
+  controller: ($scope, getLists) ->
     if $scope.story.boardId
       Trello.get "boards/#{ $scope.story.boardId }?#{ boardParams }", (storyBoard) ->
-        taskLists = dictOf storyBoard.lists, 'id', 'name'
-        global.taskLists = _.union global.taskLists, _.values(taskLists)          
-        $scope.tasks = _.groupBy storyBoard.cards, (card) -> 
-          card.list = taskLists[card.idList]
+        $scope.taskLists = getLists storyBoard
         $scope.$apply()
 })
 

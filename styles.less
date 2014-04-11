@@ -1,9 +1,48 @@
 body {
   font-family: Helvetica, Calibri
 }
-th {
+
+.listname {
   text-align: left;
-  text-transform: capitalize;
+  text-transform: capitalize;  
+}
+
+.storylist {
+  padding-left: 1em;
+
+  >.listname {
+    font-weight: bold;
+    margin: 1em 0 0.5em -1em;
+  }
+}
+
+.storyrow {
+  margin-top: 1.25em;
+}
+.tasklist {
+  margin-left: 1em;
+  >.listname {
+    height: 1em;
+    margin-top: -1.25em;
+    margin-bottom: 0.25em;
+  }
+}
+
+.story {
+  width: 300px;
+  float: left;
+}
+
+.tasklist {
+  width: 300px;
+  float: left;
+}
+
+
+
+
+
+th {
   padding: 1em 0;
   width: 14%;
 }
