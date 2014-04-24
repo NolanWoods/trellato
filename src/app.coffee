@@ -4,33 +4,15 @@ boardParams = 'lists=open&list_fields=name,pos&cards=open&card_fields=all'
 shortUrlOf = (url) -> (boardUrlRegex.exec(url) || [''])[0]
 dictOf = (collection, key, values) -> _(collection).indexBy(key).mapValues(values).value()
 
-angular.element(window.document).ready ->
-	angular.bootstrap window.document, ['trellato']
 
 trellato = (angular.module 'trellato', [])
 
 trellato.value 'global', {}
 
-trellato.factory 'getConfig', ($http, $q, global) ->
-	deferred = $q.defer()
-	($http.get 'trellato.config.js')
-		.then((response) -> 
-			global.orgId = response.data.orgId
-			deferred.resolve response.data
-		)
-		.catch( -> window.alert "There was an error loading trellato.config.js. Copy and modify from trellato.config_example.js.")
-	deferred.promise
 
-trellato.factory 'loadTrello', (getConfig, $q) ->
-	deferredTrello = $q.defer()	
-	getConfig.then (config) ->
-		window.require ["https://api.trello.com/1/client.js?key=#{ config.trelloApiKey }"], ->
-			deferredTrello.resolve window.Trello
-	deferredTrello.promise
-
-trellato.service 'trello', ($q, loadTrello) -> (apiUrl) -> 
+trellato.service 'trello', ($q) -> (apiUrl) -> 
 	deferred = $q.defer()
-	loadTrello.then (trello) -> trello.get apiUrl, (data) -> deferred.resolve data
+	Trello.get apiUrl, (data) -> deferred.resolve data
 	deferred.promise
 
 	
@@ -41,10 +23,10 @@ trellato.factory 'getLists', (global) -> (board) ->
 			card
 		list
 
-trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global, getLists) ->
+trellato.controller 'mainCtrl', ($scope, trello, global, getLists) ->
 	onSuccess = -> 
 		$scope.isLoggedIn = true
-		(trello "organizations/#{ global.orgId }/boards").then((boards) ->
+		(trello "organizations/#{ window.orgId }/boards").then((boards) ->
 			
 			# populate the sprintBoards combo
 			$scope.sprintBoards = for b in boards when storyRegex.test b.name
@@ -59,7 +41,7 @@ trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global, getLists) -
 		)
 
 	$scope.login = -> 
-		loadTrello.then((Trello) -> Trello.authorize {type: 'popup', success: -> $scope.$apply onSuccess })
+		Trello.authorize {type: 'popup', success: -> $scope.$apply onSuccess }
 
 	$scope.selectBoard = (boardId) -> 
 		Trello.get "boards/#{ boardId }?#{ boardParams }&members=all", (board) ->
@@ -71,8 +53,7 @@ trellato.controller 'mainCtrl', ($scope, loadTrello, trello, global, getLists) -
 	$scope.global = global
 
 	# try to automatically connect to trello with saved cookie
-	loadTrello.then (Trello) -> 
-		Trello.authorize {interactive: false, success: onSuccess}
+	Trello.authorize {interactive: false, success: onSuccess}
 
 
 trellato.directive 'trellable', () -> 
@@ -117,7 +98,6 @@ trellato.directive 'tasklist', () ->
 			$scope.expanded = true;
 		$scope.collapse = ->
 			collapsing = $timeout((-> $scope.expanded = false), 500)
-
 	template: '''
 		<div class='tasklist' ng-mouseenter='expand()' ng-mouseleave='collapse()'>
 			<listname></listname>
