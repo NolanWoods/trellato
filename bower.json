@@ -1,0 +1,14 @@
+{
+  "name": "trellato",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "angular": "1.2.16"
+  }
+}
