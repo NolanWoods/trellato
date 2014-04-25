@@ -1,12 +1,5 @@
 ###
 To Do:
-	* get it serving
-	* get it rebuilding
-	* get it reloading
-	- get it injecting
-	- bower-inject
-	- get it coffeeing
-	- less
 
 	- inlining - https://github.com/hemanth/gulp-replace, https://github.com/gabrielflorit/gulp-smoosher
 	- CDN'ing https://www.npmjs.org/package/gulp-google-cdn/ https://www.npmjs.org/package/gulp-cdnizer/
@@ -15,7 +8,13 @@ To Do:
 	- use gulp-load-plugins
 	- chrome map between script and coffee?
 	- have watcher not crash on syntax error
+	- find a better way to inject the config
 ###
+
+try
+	trellatoConfig = require './config'
+catch
+	throw new Error "config.js not found. copy and edit from config.sample.js" 
 
 gulp = require 'gulp'
 bowerFiles = require 'gulp-bower-files'
@@ -30,8 +29,6 @@ inject = require 'gulp-inject'
 less = require 'gulp-less'
 liveReload = require 'gulp-livereload'
 gulpReplace = require 'gulp-replace'
-
-trellatoConfig = require './config'
 
 serverPort = 31337
 paths =
