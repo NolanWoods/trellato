@@ -12,6 +12,6 @@
     "angular": "1.2.16",
     "jquery": "~2.1.0",
     "lodash": "~2.4.1",
-    "requirejs": "~2.1.11"
+    "angularLocalStorage": "~0.1.7"
   }
 }

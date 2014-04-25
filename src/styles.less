@@ -16,31 +16,32 @@ body {
   }
 }
 
-.storyrow {
-  margin-top: 1.25em;
+table {
+  padding-right: 1em;
+}
+td {
+  vertical-align: top;
 }
 
 .tasklist {
   margin-left: 1em;
-  >.listname {
-    height: 1em;
-    margin-top: -1.25em;
-    margin-bottom: 0.25em;
-  }
 }
 
 .story {
-  width: 300px;
-  float: left;
+  padding-top: 1em;
+  // width: 20%;
+  // float: left;
 }
 
 .tasklist {
-  width: 300px;
-  float: left;
-
   .card {
     float: left;
     width: 100%;
+  }
+}
+
+.stackable {
+  .card {
     height: 3.5em;
     transition: margin-top 0.5s;
   }
@@ -57,7 +58,7 @@ body {
   border: solid 1px #555;
   border-radius: 5px;
   padding: 5px;
-  width: 14%px;
+  width: 100%;
   margin-bottom: 5px;
   overflow: hidden;
 }
@@ -77,6 +78,12 @@ body {
 
   border: solid 1px #333;
   background-color: rgba(100, 100, 100, 1);
+  transition: background-color 0.5s, border-color 0.5s;
+}
+.stacked .member {
+  border-color: rgba(100, 100, 100, 0);
+  background-color: rgba(100, 100, 100, 0.25);
+  color: #ccc;
 }
 
 

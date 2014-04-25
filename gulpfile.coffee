@@ -17,18 +17,9 @@ catch
 	throw new Error "config.js not found. copy and edit from config.sample.js" 
 
 gulp = require 'gulp'
-bowerFiles = require 'gulp-bower-files'
-concat = require 'gulp-concat'
-clean = require 'gulp-clean'
-coffee = require 'gulp-coffee'
 connect = require 'connect'
-embedReloader = require 'gulp-embedlr'
-#es = require 'event-stream'
 http = require 'http'
-inject = require 'gulp-inject'
-less = require 'gulp-less'
-liveReload = require 'gulp-livereload'
-gulpReplace = require 'gulp-replace'
+plugins = (require 'gulp-load-plugins')()
 
 serverPort = 31337
 paths =
@@ -40,32 +31,32 @@ paths =
 
 gulp.task 'clean', ->
 	gulp.src paths.dest, {read: false}
-		.pipe clean()
+		.pipe plugins.clean()
 
 gulp.task 'config', (done) ->
 	console.log trellatoConfig.trelloApiKey
 
 gulp.task 'html', ->
-	injectOpts = 
+	bowerFiles = plugins.bowerFiles().pipe gulp.dest "#{ paths.dest }/lib"
 	gulp.src paths.html
-		.pipe gulpReplace '%TRELLO_API_KEY%', trellatoConfig.trelloApiKey
-		.pipe gulpReplace '%ORG_ID%', trellatoConfig.orgId
-		.pipe inject (bowerFiles().pipe gulp.dest "#{ paths.dest }/lib"), {ignorePath: 'build'}
-		.pipe embedReloader()
+		.pipe plugins.replace '%TRELLO_API_KEY%', trellatoConfig.trelloApiKey
+		.pipe plugins.replace '%ORG_ID%', trellatoConfig.orgId
+		.pipe plugins.inject bowerFiles, {ignorePath: 'build'}
+		.pipe plugins.embedlr()
 		.pipe gulp.dest paths.dest
 
 
 gulp.task 'scripts', ->
 	gulp.src paths.scripts
-		.pipe coffee()
-		.pipe concat 'script.js'
+		.pipe plugins.coffee()
+		.pipe plugins.concat 'script.js'
 		.pipe gulp.dest paths.dest
 
 
 gulp.task 'styles', ->
 	gulp.src paths.styles
-		.pipe less()
-		.pipe concat 'styles.css'
+		.pipe plugins.less()
+		.pipe plugins.concat 'styles.css'
 		.pipe gulp.dest paths.dest
 
 
@@ -87,7 +78,7 @@ gulp.task 'watch', ['html', 'scripts', 'styles'], ->
 	gulp.watch paths.scripts, ['scripts']
 	gulp.watch paths.html, ['html']
 
-	lr = liveReload();
+	lr = plugins.livereload();
 	gulp.watch "#{ paths.dest }/**"
 		.on 'change', (file) -> lr.changed file.path
 
