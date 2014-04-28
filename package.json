@@ -25,7 +25,11 @@
     "gulp-bower-files": "~0.2.2",
     "gulp-inject": "~0.4.1",
     "event-stream": "~3.1.2",
-    "gulp-less": "~1.2.3"
+    "gulp-less": "~1.2.3",
+    "gulp-inline-source": "0.0.2",
+    "gulp-ngmin": "~0.2.0",
+    "gulp-cdnizer": "~0.2.4",
+    "gulp-util": "~2.2.14"
   },
   "dependencies": {
     "gulp-coffee": "~1.4.2",

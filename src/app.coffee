@@ -24,7 +24,7 @@ trellato.factory 'getLists', (global) -> (board) ->
 		list
 
 trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage) ->
-	onSuccess = -> 
+	onSuccess = ->
 		$scope.isLoggedIn = true
 		trello "organizations/#{ window.orgId }/boards"
 			.then((boards) ->

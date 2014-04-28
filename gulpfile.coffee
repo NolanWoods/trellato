@@ -1,7 +1,6 @@
 ###
 To Do:
 
-	- inlining - https://github.com/hemanth/gulp-replace, https://github.com/gabrielflorit/gulp-smoosher
 	- CDN'ing https://www.npmjs.org/package/gulp-google-cdn/ https://www.npmjs.org/package/gulp-cdnizer/
 	- uglify / angular-dependency-injecty-safe-ify
 
@@ -36,20 +35,14 @@ gulp.task 'clean', ->
 gulp.task 'config', (done) ->
 	console.log trellatoConfig.trelloApiKey
 
-gulp.task 'html', ->
-	bowerFiles = plugins.bowerFiles().pipe gulp.dest "#{ paths.dest }/lib"
-	gulp.src paths.html
-		.pipe plugins.replace '%TRELLO_API_KEY%', trellatoConfig.trelloApiKey
-		.pipe plugins.replace '%ORG_ID%', trellatoConfig.orgId
-		.pipe plugins.inject bowerFiles, {ignorePath: 'build'}
-		.pipe plugins.embedlr()
-		.pipe gulp.dest paths.dest
-
 
 gulp.task 'scripts', ->
 	gulp.src paths.scripts
-		.pipe plugins.coffee()
-		.pipe plugins.concat 'script.js'
+		.pipe plugins.concat 'script.coffee'
+		.pipe gulp.dest paths.dest
+		.pipe plugins.coffee({bare: true, sourceMap: true})
+			.on('error', plugins.util.log)
+#		.pipe plugins.ngmin()
 		.pipe gulp.dest paths.dest
 
 
@@ -60,7 +53,18 @@ gulp.task 'styles', ->
 		.pipe gulp.dest paths.dest
 
 
-gulp.task 'server', ['html', 'scripts', 'styles'], (done) ->
+gulp.task 'html', ['scripts', 'styles'], ->
+	bowerFiles = plugins.bowerFiles().pipe gulp.dest "#{ paths.dest }/lib"
+	gulp.src paths.html
+		.pipe plugins.replace '%TRELLO_API_KEY%', trellatoConfig.trelloApiKey
+		.pipe plugins.replace '%ORG_ID%', trellatoConfig.orgId
+		.pipe plugins.inject bowerFiles, {ignorePath: 'build'}
+		.pipe plugins.embedlr()
+#		.pipe plugins.inlineSource paths.dest
+		.pipe gulp.dest paths.dest
+
+
+gulp.task 'server', ['html'], (done) ->
 	server = http.createServer (connect()
 				.use connect.logger 'dev'
 				.use connect.static 'build')
@@ -73,14 +77,16 @@ gulp.task 'server', ['html', 'scripts', 'styles'], (done) ->
 			done()
 
 
-gulp.task 'watch', ['html', 'scripts', 'styles'], ->
+gulp.task 'watch', ['html'], ->
 	gulp.watch paths.styles, ['styles']
 	gulp.watch paths.scripts, ['scripts']
 	gulp.watch paths.html, ['html']
 
+
+gulp.task 'livereload', ['watch'], ->
 	lr = plugins.livereload();
 	gulp.watch "#{ paths.dest }/**"
 		.on 'change', (file) -> lr.changed file.path
 
 
-gulp.task 'default', ['server', 'watch']
+gulp.task 'default', ['server', 'livereload']
