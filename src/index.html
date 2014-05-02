@@ -18,8 +18,36 @@
 			Enable Collapsifying
 		</label>
 	</div>
-    <trellable>
 
+	<div class='trellable' ng-repeat='list in storyLists'>
+		<listname></listname>
+		<div ng-repeat='story in list.cards' 
+			 class='listcards' ng-class='{storyrow: story.boardId}' story>
+
+			<div ng-if='!taskLists' style='width: {{colwidth}}'>
+				<td ng-class='{story: taskLists}'>
+					<div card='story'></div>
+				</td>
+			</div>
+
+			<table ng-if='taskLists'>
+				<colgroup>
+					<col style='width: {{colwidth}}' />
+					<col ng-repeat='col in cols' style='width: {{colwidth}}' />
+				</colgroup>
+				<tr>
+					<td ng-class='{story: taskLists}'>
+						<div card='story'></div>
+					</td>
+					<td ng-repeat='col in cols' 
+						ng-init='list = taskLists[$index]'>
+						<div tasklist></div>
+					</td>
+				</tr>
+			</table>		
+		</div>
+		<div style='clear: left'></div>
+	</div>
 
 	<!-- inject:js -->
 	<!-- endinject -->

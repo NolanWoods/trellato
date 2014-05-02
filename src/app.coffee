@@ -23,7 +23,7 @@ trellato.factory 'getLists', (global) -> (board) ->
 			card
 		list
 
-trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage) ->
+trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage, $rootScope) ->
 	onSuccess = ->
 		$scope.isLoggedIn = true
 		trello "organizations/#{ window.orgId }/boards"
@@ -52,52 +52,31 @@ trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage) ->
 	storage.bind $scope, 'options', { defaultValue: {enableStacking: true} }
 	$scope.global = global
 
+	$rootScope.maxCols = 3
+	$rootScope.$watch 'maxCols', (maxCols) ->		
+		$scope.colwidth = 100 / maxCols + '%'
+		$scope.cols = [1..maxCols-1]
+
+
 	# try to automatically connect to trello with saved cookie
 	Trello.authorize {interactive: false, success: onSuccess}
-
-
-trellato.directive 'trellable', () -> 
-	restrict: 'E',
-	template: '''
-		<div class='trellable' ng-repeat='list in storyLists'>
-			<listname></listname>
-			<div class='listcards'>
-				<div ng-repeat='story in list.cards' ng-class='{storyrow: story.boardId}' story></div>
-			</div>
-			<div style='clear: left'></div>
-		</div>''' 
 
 
 trellato.directive 'listname', () -> 
 	restrict: 'E'
 	replace: 'element'
 	template: '''
-			<div class='listname'>{{list.name}} <span ng-show='list.cards.length > 0'>({{list.cards.length}})</span></div>
-		'''  
+			<div class='listname'>{{list.name}} 
+				<span ng-show='list.cards.length > 0'>({{list.cards.length}})</span>
+			</div>'''  
 
 
 trellato.directive 'story', () -> 
-	template: '''
-		<table>
-			<colgroup>
-				<col style='width: {{colwidth}}'>
-				<col ng-repeat='l in taskLists' style='width: {{colwidth}}'>
-			</colgroup>
-			<tr>
-				<td ng-class='{story: taskLists}'>
-					<div card='story'></div>
-				</td>
-				<td ng-repeat='list in taskLists'>
-					<div tasklist></div>
-				</td>
-			</tr>
-		</table>'''
-	controller: ($scope, getLists) ->
-		$scope.colwidth = '500px'
+	controller: ($scope, getLists, $rootScope) ->
 		if $scope.story.boardId
 			Trello.get "boards/#{ $scope.story.boardId }?#{ boardParams }", (storyBoard) ->
 				$scope.taskLists = getLists storyBoard
-				$scope.colwidth = (100 / ($scope.taskLists.length + 1)) + '%' if $scope.taskLists.length > 0
+				$rootScope.maxCols = $scope.taskLists.length + 1 if $scope.taskLists.length + 1 > $rootScope.maxCols
 				$scope.$apply()
 
 
