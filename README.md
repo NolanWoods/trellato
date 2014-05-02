@@ -3,18 +3,23 @@ trellato
 
 a Trello board multiplexer for sprint planning awesomeness
 
+Setup
+-----
+
+1. Clone the git repo
+2. Run `npm install` and `bower install` inside the working dir to install dependencies
+3. If you don't already have gulp installed, run `npm install -g gulp` to install it on your system
+4. Run `gulp` to build the project and start an auto-reloading server for development.
+
 To-do
-===
+-----
 
-Application
-* use local storage for user settings and caching api requests
-* bootstrap for badges, alerts
-* per-story lists
-* collapsey card stacks
+Features:
+* use localstorage to cache API requests
+* bootstrap for better UI
+* support moving cards in and between lists!
+* implement creating story boards from story cards (should be able to clone from a template board & auto-add members)
 
-Infrastructure
-* make this a proper node.js project with package management via npm and bower
-* do less and coffeescript compilation on the server side so we can get decent 
-* linting, minification, and .map files
-* enable serving it with node, as having to configure IIS to add mimetypes for .coffee and .less files is a pain
-* unit tests
+Project:
+* CDN-ify the library files and create a 'publish' task
+* add unit tests
