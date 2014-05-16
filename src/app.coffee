@@ -18,7 +18,7 @@ trellato.service 'trello', ($q) -> (apiUrl) ->
 	
 trellato.factory 'getLists', (global) -> (board) ->
 	for list in _.sortBy board.lists, 'pos'
-		list.cards = for card in board.cards when card.idList == list.id
+		list.cards = for card in board.cards when card.idList == list.id 
 			card.boardId = global.boardIds[shortUrlOf(card.desc)] if card.desc?
 			card
 		list
@@ -50,6 +50,7 @@ trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage, $roo
 			$scope.$apply()
 
 	storage.bind $scope, 'options', { defaultValue: {enableStacking: true} }
+	global.options = $scope.options
 	$scope.global = global
 
 	$rootScope.maxCols = 3
@@ -82,19 +83,21 @@ trellato.directive 'story', () ->
 
 trellato.directive 'tasklist', () -> 
 	scope: true,
-	controller: ($scope, $timeout) ->
+	controller: ($scope, $timeout, global) ->
 		collapsing = false
 		$scope.expand = ->
 			if collapsing then $timeout.cancel collapsing
 			$scope.expanded = true;
 		$scope.collapse = ->
 			collapsing = $timeout((-> $scope.expanded = false), 500)
+		$scope.showCard = (card) ->
+			not global.options.hideTestTasks or card.labels.every (label) -> label.color != 'blue'
 	template: '''
 		<div class='tasklist' ng-mouseenter='expand()' ng-mouseleave='collapse()' 
 				ng-class='{stackable: options.enableStacking}'>
 			<listname></listname>
 			<div class='listcards' ng-class='{stacked: !expanded && options.enableStacking}'>
-				<div ng-repeat='card in list.cards' card='card'></div>
+				<div ng-repeat='card in list.cards | filter:showCard' card='card'></div>
 			</div>
 			<div style="height: 1px; width: 100%;"></div>
 		</div>
