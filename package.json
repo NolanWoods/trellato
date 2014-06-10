@@ -29,7 +29,10 @@
     "gulp-inline-source": "0.0.2",
     "gulp-ngmin": "~0.2.0",
     "gulp-cdnizer": "~0.2.4",
-    "gulp-util": "~2.2.14"
+    "gulp-util": "~2.2.14",
+    "karma": "^0.12.16",
+    "karma-coffee-preprocessor": "^0.2.1",
+    "gulp-coffeelint": "^0.3.3"
   },
   "dependencies": {
     "gulp-coffee": "~1.4.2",

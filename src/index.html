@@ -24,7 +24,7 @@
 
 	<div class='trellable' ng-repeat='list in storyLists'>
 		<listname></listname>
-		<div ng-repeat='story in list.cards' 
+		<div ng-repeat='story in list.cards | filter:showCard' 
 			 class='listcards' ng-class='{storyrow: story.boardId}' story>
 
 			<div ng-if='!taskLists' style='width: {{colwidth}}'>
