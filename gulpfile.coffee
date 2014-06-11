@@ -78,12 +78,18 @@ gulp.task 'config', (done) ->
     console.log trellatoConfig.trelloApiKey
 
 
+errLogger = (taskName) ->
+    errLabel = "[" + plugins.util.colors.bold.green(taskName) + "]"
+    (err) ->
+        #plugins.util.beep()
+        plugins.util.log errLabel, err
+
 gulp.task 'scripts', ->
     gulp.src paths.scripts
         .pipe plugins.concat 'app.coffee'
         .pipe gulp.dest paths.dest
+        .pipe plugins.plumber { errorHandler: errLogger 'scripts' }
         .pipe plugins.coffee({bare: true, sourceMap: true})
-            .on('error', plugins.util.log)
 #        .pipe plugins.ngmin()
         .pipe gulp.dest paths.dest
 
