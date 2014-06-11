@@ -2,7 +2,7 @@
 To Do:
 
     - CDN'ing https://www.npmjs.org/package/gulp-google-cdn/ 
-    	https://www.npmjs.org/package/gulp-cdnizer/
+        https://www.npmjs.org/package/gulp-cdnizer/
     - uglify / angular-dependency-injecty-safe-ify
 
     - use gulp-load-plugins
@@ -26,6 +26,7 @@ paths =
     dest: 'build'
     html: 'src/index.html'
     scripts: 'src/**/*.coffee'
+    tests: 'test/**/*.coffee'
     styles: 'src/**/*.less'
 
 
@@ -40,6 +41,35 @@ gulp.task 'lint', ->
 
 gulp.task 'lint-watch', ['lint'], -> gulp.watch paths.scripts, ['lint']
 
+
+gulp.task 'lib', ->
+    plugins.bowerFiles()
+        .pipe plugins.flatten()
+        .pipe plugins.concat 'lib.js'
+        .pipe gulp.dest paths.dest
+
+
+gulp.task 'karma', ['lib'], ->
+    karma = require 'karma'
+    karma.server.start {
+        frameworks: ['mocha']
+        preprocessors: {
+            '**/*.coffee': ['coffee']
+        }
+        coffeePreprocessor: {
+            options: {
+                bare: true
+                sourceMap: true
+            }
+        }
+        files: [
+            "#{ paths.dest }/lib.js"
+            "./bower_components/angular-mocks/angular-mocks.js"
+            { pattern: paths.scripts, watched: true }
+            { pattern: paths.tests, watched: true }
+        ]
+    }
+
 gulp.task 'clean', ->
     gulp.src paths.dest, {read: false}
         .pipe plugins.clean()
@@ -50,7 +80,7 @@ gulp.task 'config', (done) ->
 
 gulp.task 'scripts', ->
     gulp.src paths.scripts
-        .pipe plugins.concat 'script.coffee'
+        .pipe plugins.concat 'app.coffee'
         .pipe gulp.dest paths.dest
         .pipe plugins.coffee({bare: true, sourceMap: true})
             .on('error', plugins.util.log)
@@ -65,12 +95,10 @@ gulp.task 'styles', ->
         .pipe gulp.dest paths.dest
 
 
-gulp.task 'html', ['scripts', 'styles'], ->
-    bowerFiles = plugins.bowerFiles().pipe gulp.dest "#{ paths.dest }/lib"
+gulp.task 'html', ['lib', 'scripts', 'styles'], ->
     gulp.src paths.html
         .pipe plugins.replace '%TRELLO_API_KEY%', trellatoConfig.trelloApiKey
         .pipe plugins.replace '%ORG_ID%', trellatoConfig.orgId
-        .pipe plugins.inject bowerFiles, {ignorePath: 'build'}
         .pipe plugins.embedlr()
 #        .pipe plugins.inlineSource paths.dest
         .pipe gulp.dest paths.dest
