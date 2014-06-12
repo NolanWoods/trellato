@@ -4,8 +4,8 @@
 	<link rel="stylesheet" type="text/css" href="styles.css" inline />
 </head><body ng-app="trellato" ng-controller="mainCtrl">
 
-	<button ng-hide='isLoggedIn' ng-click='login()'>Connect to Trello</button>
-	<div ng-if='isLoggedIn'>
+	<button ng-hide='trello.isLoggedIn' ng-click='login()'>Connect to Trello</button>
+	<div ng-if='trello.isLoggedIn'>
 	<div>
 		<select ng-model='selectedBoard'
 		  ng-options='b.id as b.name for b in sprintBoards'
@@ -19,6 +19,7 @@
 		<label><input type="checkbox" ng-model='options.hideTestTasks'>
 			Hide test tasks
 		</label>
+		<button ng-click='logout()'>Log out of Trello</button>
 	</div>
 
 	<div class='trellable' ng-repeat='list in storyLists'>
@@ -50,7 +51,7 @@
 		</div>
 		<div style='clear: left'></div>
 	</div>
-
+	</div>
 	<script src="lib.js"></script>
 	<script type="text/javascript" src="https://api.trello.com/1/client.js?key=%TRELLO_API_KEY%"></script>
 	<script type="text/javascript">

@@ -14,12 +14,37 @@ trellato = angular.module 'trellato', ['angularLocalStorage']
 
 trellato.value 'global', {}
 
+trellato.service 'trello', ($q, $rootScope, $window) -> 
+    trelloApi = $window.Trello
+    delete $window.Trello
 
-trellato.service 'trello', ($q) -> (apiUrl) ->
-    deferred = $q.defer()
-    Trello.get apiUrl, (data) -> deferred.resolve data
-    deferred.promise
+    trello =
+        isLoggedIn: false
+        authorize: (isAutomatic, onSuccess) ->            
+            success = ->
+                trello.isLoggedIn = true
+                onSuccess() if onSuccess?
 
+            if isAutomatic 
+                trelloApi.authorize {interactive: false, success: success }
+            else 
+                trelloApi.authorize {type: 'popup', success: -> $rootScope.$apply success }
+
+        deauthorize: ->
+            trelloApi.deauthorize()
+            trello.isLoggedIn = false
+
+        get: (apiUrl, onSuccess) ->
+            deferred = $q.defer()
+            trelloApi.get apiUrl, 
+                (data) -> deferred.resolve data
+                (err) -> 
+                    console.log 'Trello API Error', err
+                    if err.status == 401
+                        $rootScope.$apply () -> trello.deauthorize
+            if onSuccess
+                deferred.promise.then onSuccess
+            else deferred.promise
 
 trellato.factory 'getLists', (global) -> (board) ->
     for list in _.sortBy board.lists, 'pos'
@@ -29,30 +54,27 @@ trellato.factory 'getLists', (global) -> (board) ->
         list
 
 trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage, $rootScope) ->
-    onSuccess = ->
-        $scope.isLoggedIn = true
-        trello "organizations/#{ window.orgId }/boards"
-            .then((boards) ->
+    $scope.trello = trello
 
-                # populate the sprintBoards combo
-                $scope.sprintBoards = for b in boards when storyRegex.test b.name
-                    {id: b.id, name: b.name}
+    loadBoards = ->
+        trello.get "organizations/#{ window.orgId }/boards", (boards) ->
+            # populate the sprintBoards combo
+            $scope.sprintBoards = for b in boards when storyRegex.test b.name
+                {id: b.id, name: b.name}
 
-                _.each boards, (board) -> board.url = shortUrlOf board.url
-                global.boardIds = dictOf boards, 'url', 'id'
+            _.each boards, (board) -> board.url = shortUrlOf board.url
+            global.boardIds = dictOf boards, 'url', 'id'
 
-                # select the latest sprint board
-                $scope.selectBoard $scope.selectedBoard = $scope.sprintBoards[-1..][0].id
-            )
+            # select the latest sprint board
+            $scope.selectBoard $scope.selectedBoard = $scope.sprintBoards[-1..][0].id
 
-    $scope.login = ->
-        Trello.authorize {type: 'popup', success: -> $scope.$apply onSuccess }
+    $scope.login = -> trello.authorize false, loadBoards
+    $scope.logout = trello.deauthorize
 
     $scope.selectBoard = (boardId) ->
-        Trello.get "boards/#{ boardId }?#{ boardParams }&members=all", (board) ->
+        trello.get "boards/#{ boardId }?#{ boardParams }&members=all", (board) ->
             $scope.storyLists = getLists board
             global.members = _.indexBy board.members, 'id'
-            $scope.$apply()
 
     storage.bind $scope, 'options', { defaultValue: {enableStacking: true} }
     global.options = $scope.options
@@ -66,8 +88,10 @@ trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage, $roo
 
 
     # try to automatically connect to trello with saved cookie
-    Trello.authorize {interactive: false, success: onSuccess}
+    trello.authorize true, loadBoards
+    #Trello.authorize {interactive: false, success: onSuccess}
 
+    #onSuccess()
 
 trellato.directive 'listname', () ->
     restrict: 'E'
@@ -79,14 +103,13 @@ trellato.directive 'listname', () ->
 
 
 trellato.directive 'story', () ->
-    controller: ($scope, getLists, $rootScope) ->
+    controller: ($scope, getLists, $rootScope, trello) ->
         if $scope.story.boardId
-            Trello.get "boards/#{ $scope.story.boardId }?#{ boardParams }", 
+            trello.get "boards/#{ $scope.story.boardId }?#{ boardParams }", 
                 (storyBoard) ->
                     $scope.taskLists = getLists storyBoard
                     $rootScope.maxCols = $scope.taskLists.length + 
                         1 if $scope.taskLists.length + 1 > $rootScope.maxCols
-                    $scope.$apply()
 
 
 trellato.directive 'tasklist', () ->
