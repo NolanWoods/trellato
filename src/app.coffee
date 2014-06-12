@@ -25,10 +25,18 @@ trellato.service 'trello', ($q, $rootScope, $window) ->
                 trello.isLoggedIn = true
                 onSuccess() if onSuccess?
 
-            if isAutomatic 
-                trelloApi.authorize {interactive: false, success: success }
-            else 
-                trelloApi.authorize {type: 'popup', success: -> $rootScope.$apply success }
+            if isAutomatic then trelloApi.authorize {
+                interactive: false
+                success: success 
+            }
+            else trelloApi.authorize {
+                type: 'popup',
+                name: 'Trellato'
+                response_type: 'token'
+                expiration: 'never'
+                scope: { write: true, read: true }
+                success: -> $rootScope.$apply success
+            }
 
         deauthorize: ->
             trelloApi.deauthorize()
@@ -69,6 +77,8 @@ trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage, $roo
             $scope.selectBoard $scope.selectedBoard = $scope.sprintBoards[-1..][0].id
 
     $scope.login = -> trello.authorize false, loadBoards
+    trello.authorize true, loadBoards
+
     $scope.logout = trello.deauthorize
 
     $scope.selectBoard = (boardId) ->
@@ -87,11 +97,6 @@ trellato.controller 'mainCtrl', ($scope, trello, global, getLists, storage, $roo
         $scope.cols = [1..maxCols-1]
 
 
-    # try to automatically connect to trello with saved cookie
-    trello.authorize true, loadBoards
-    #Trello.authorize {interactive: false, success: onSuccess}
-
-    #onSuccess()
 
 trellato.directive 'listname', () ->
     restrict: 'E'
