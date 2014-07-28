@@ -1,138 +1,159 @@
-###
-To Do:
+gulp = require 'gulp'
+plugins = (require 'gulp-load-plugins')() 
 
-    - CDN'ing https://www.npmjs.org/package/gulp-google-cdn/ 
-        https://www.npmjs.org/package/gulp-cdnizer/
-    - uglify / angular-dependency-injecty-safe-ify
+browserify = require 'browserify'
+watchify = require 'watchify'
+sourcify = require 'vinyl-source-stream'
 
-    - use gulp-load-plugins
-    - chrome map between script and coffee?
-    - have watcher not crash on syntax error
-    - find a better way to inject the config
-###
+Promise = require 'promise'
+debug = require 'debug'
+path = require 'path'
+rimraf = require 'rimraf'
+should = require 'should'
+
+## Config
 
 try
-    trellatoConfig = require './config'
+  trellatoConfig = require './config'
 catch
-    throw new Error "config.js not found. copy and edit from config.sample.js" 
+  throw new Error 'config.js not found. copy and edit from config.sample.js'
 
-gulp = require 'gulp'
-connect = require 'connect'
-http = require 'http'
-plugins = (require 'gulp-load-plugins')()
+src = 
+  html: './src/index.html'
+  scripts: './src/app.coffee'
+  styles: './src/styles.less'
 
-serverPort = 31337
 paths =
-    dest: 'build'
-    html: 'src/index.html'
-    scripts: 'src/**/*.coffee'
-    tests: 'test/**/*.coffee'
-    styles: 'src/**/*.less'
+  build: path.resolve './build/'
+
+livereloadPort = 35729
 
 
-gulp.task 'lint', ->
-    gulp.src [paths.scripts, 'gulpfile.coffee']
-        .pipe plugins.coffeelint {
-            indentation: {value: 4}
-            no_trailing_whitespace: {level: 'ignore'}
-            max_line_length: {value: 100}
-        }
-        .pipe plugins.coffeelint.reporter()
+gulp.task 'clean', (done) -> rimraf paths.build, done
 
-gulp.task 'lint-watch', ['lint'], -> gulp.watch paths.scripts, ['lint']
+gulp.task 'build-vendor', ['clean'], -> buildVendor()
 
+gulp.task 'build-scripts', ['clean'], -> (scriptBuilder false).build()
 
-gulp.task 'lib', ->
-    plugins.bowerFiles()
-        .pipe plugins.flatten()
-        .pipe plugins.concat 'lib.js'
-        .pipe gulp.dest paths.dest
+gulp.task 'build-styles', ['clean'], -> buildStyles()
 
+gulp.task 'build', ['build-vendor', 'build-scripts', 'build-styles'], 
+  -> buildIndex()
 
-gulp.task 'karma', ['lib'], ->
-    karma = require 'karma'
-    karma.server.start {
-        frameworks: ['mocha']
-        preprocessors: {
-            '**/*.coffee': ['coffee']
-        }
-        coffeePreprocessor: {
-            options: {
-                bare: true
-                sourceMap: true
-            }
-        }
-        files: [
-            "#{ paths.dest }/lib.js"
-            "./bower_components/angular-mocks/angular-mocks.js"
-            { pattern: paths.scripts, watched: true }
-            { pattern: paths.tests, watched: true }
-        ]
-    }
+gulp.task 'lint', ['lint-coffee']
 
-gulp.task 'clean', ->
-    gulp.src paths.dest, {read: false}
-        .pipe plugins.clean()
-
-gulp.task 'config', (done) ->
-    console.log trellatoConfig.trelloApiKey
+gulp.task 'lint-coffee', ->
+  gulp.src ['./*.coffee', './src/**/*.coffee'], read: true
+    .pipe plugins.coffeelint '.coffeelintrc'
+    .pipe plugins.coffeelint.reporter()
 
 
-errLogger = (taskName) ->
-    errLabel = "[" + plugins.util.colors.bold.green(taskName) + "]"
-    (err) ->
-        #plugins.util.beep()
-        plugins.util.log errLabel, err
+gulp.task 'watch', (done) ->
+  scripts = scriptBuilder true    
+  server = null
+  livereload = null
 
-gulp.task 'scripts', ->
-    gulp.src paths.scripts
-        .pipe plugins.concat 'app.coffee'
-        .pipe gulp.dest paths.dest
-        .pipe plugins.plumber { errorHandler: errLogger 'scripts' }
-        .pipe plugins.coffee({bare: true, sourceMap: true})
-#        .pipe plugins.ngmin()
-        .pipe gulp.dest paths.dest
+  # close existing connections so gulp will exit
+  errHandler = (err) ->
+    scripts.close()
+    server?.close()
+    livereload?.close()
+    done err
 
+  reloadIndex = -> notify livereload, 'index.html'
+  buildAndReloadIndex = -> (buildIndex true).then reloadIndex
 
-gulp.task 'styles', ->
-    gulp.src paths.styles
-        .pipe plugins.less()
-        .pipe plugins.concat 'styles.css'
-        .pipe gulp.dest paths.dest
-
-
-gulp.task 'html', ['lib', 'scripts', 'styles'], ->
-    gulp.src paths.html
-        .pipe plugins.replace '%TRELLO_API_KEY%', trellatoConfig.trelloApiKey
-        .pipe plugins.replace '%ORG_ID%', trellatoConfig.orgId
-        .pipe plugins.embedlr()
-#        .pipe plugins.inlineSource paths.dest
-        .pipe gulp.dest paths.dest
+  # build everything and start the servers
+  Promise.all [ buildVendor(), buildStyles(), scripts.build() ]
+    .then buildIndex true
+    .then (-> startServer().then (srv) -> server = srv)
+    .then (-> startLivereload().then (lr) -> livereload = lr)
+    .then reloadIndex
+    .then null, errHandler
 
 
-gulp.task 'server', ['html'], (done) ->
-    server = http.createServer (connect()
-                .use connect.logger 'dev'
-                .use connect.static 'build')
-        .listen serverPort
-        .on 'error', (error) ->
-            console.log 'ERROR: unable to start server', error
-            done(error)
-        .on 'listening', ->
-            console.log 'Server listening on', server.address().port
-            done()
+  # watch files and update
+  gulp.watch src.html, buildAndReloadIndex
+  gulp.watch src.styles, -> 
+    buildStyles().then -> 
+      notify livereload, 'styles.css'
+  scripts.on 'update', -> scripts.build().then buildAndReloadIndex
+
+  return
 
 
-gulp.task 'watch', ['html'], ->
-    gulp.watch paths.styles, ['styles']
-    gulp.watch paths.scripts, ['scripts']
-    gulp.watch paths.html, ['html']
+## Functions
 
+buildVendor = -> new Promise (resolve) ->
+  log = debug 'gulp:buildVendor'
+  log 'building vendor.js'
+  plugins.bowerFiles()
+    .pipe plugins.concat 'vendor.js'
+    .pipe gulp.dest paths.build
+    .on 'end', resolve
 
-gulp.task 'livereload', ['watch'], ->
-    lr = plugins.livereload()
-    gulp.watch "#{ paths.dest }/**"
-        .on 'change', (file) -> lr.changed file.path
+buildStyles = -> new Promise (resolve) ->
+  gulp.src src.styles
+      .pipe plugins.less()
+      .pipe plugins.concat 'styles.css'
+      .pipe gulp.dest paths.build
+      .on 'end', resolve
 
+scriptBuilder = (watch) ->
+  log = debug 'gulp:scriptBuilder'
+  bundler = (if watch then watchify else browserify) src.scripts
+  bundler.transform 'coffeeify'
+    .on 'log', (msg) -> log '... ' + msg
+  bundler.build = ->
+    log 'building app.js'
+    new Promise (resolve) ->
+      bundler.bundle { debug: true, extensions: ['.coffee'] }
+        .pipe sourcify 'app.js'
+        .pipe gulp.dest paths.build
+        .on 'end', resolve
+  bundler
 
-gulp.task 'default', ['server', 'livereload']
+buildIndex = (livereload) -> 
+  log = debug 'gulp:buildIndex'
+  log 'building index.html'    
+  
+  inject = (src, tag) ->
+    # gulp-inject is super finicky about the tags; make sure the spacing
+    # in the comment tags exactly matches what is produced from the .jade
+    srcFiles = gulp.src src, {cwd: paths.build, read: false}
+    plugins.inject srcFiles, 
+      starttag: "<!-- inject:#{tag}:{{ext}}-->"
+      endtag: '<!-- endinject-->'
+  new Promise (resolve) ->
+    p = gulp.src src.html
+      .pipe inject './vendor.js', 'vendor'
+      .pipe inject './app.js', 'app'    
+      .pipe plugins.replace '%TRELLO_API_KEY%', trellatoConfig.trelloApiKey
+      .pipe plugins.replace '%ORG_ID%', trellatoConfig.orgId
+    p = p.pipe plugins.embedlr() if livereload
+    p = p.pipe gulp.dest paths.build
+      .on 'end', resolve
+
+startServer = (livereload) -> new Promise (resolve) ->
+  express = require 'express'
+  app = express()
+    .set 'port', process.env.PORT or 3000
+    .use express.static paths.build  
+  if livereload
+    app.use (require 'connect-livereload')
+  server = app.listen (app.get 'port'), ->
+    plugins.util.log "server listening on port #{ server.address().port}"
+    resolve server
+
+startLivereload = ->
+  new Promise (resolve, reject) ->
+    lrServer = (require 'tiny-lr')()
+    lrServer.listen livereloadPort, (err) ->
+      if err? then reject err 
+      else
+        plugins.util.log "tiny-lr listening on #{ livereloadPort }" 
+        resolve lrServer
+
+notify = (livereload, file) ->
+  (debug 'gulp:notify') file
+  livereload.changed {body: {files: [file]}}

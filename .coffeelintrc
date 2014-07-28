@@ -1,0 +1,37 @@
+{
+  "camel_case_classes":             { "level": "error" },
+  "coffeescript_error":             { "level": "error" },
+  "duplicate_key":                  { "level": "error" },
+  "indentation":                    { "level": "error", "value": 2 },
+  "no_empty_functions":             { "level": "error" },
+  "no_empty_param_list":            { "level": "error" },
+  "no_interpolation_in_single_quotes":  { "level": "error" },
+  "no_stand_alone_at":              { "level": "error" },
+  "no_tabs":                        { "level": "error" },
+  "no_throwing_strings":            { "level": "error" },
+  "no_trailing_semicolons":         { "level": "error" },
+  "no_backticks":                   { "level": "error" },
+
+  "arrow_spacing":                  { "level": "warn" },
+  "colon_assignment_spacing":       { "level": "warn", 
+                                      "spacing": { "left": 0, "right": 1 } },
+  "cyclomatic_complexity":          { "level": "warn", "value": 10 },
+  "line_endings":                   { "level": "warn", "value": "unix" },
+  "max_line_length":                { "level": "warn", "value": 80, "limitComments": true },
+  "missing_fat_arrows":             { "level": "warn" },
+  "newlines_after_classes":         { "level": "warn", "value": 3 },
+  "no_debugger":                    { "level": "warn" },
+  "no_unnecessary_double_quotes":   { "level": "warn" },
+  "no_unnecessary_fat_arrows":      { "level": "warn" },
+  "space_operators":                { "level": "warn" },
+
+
+  "empty_constructor_needs_parens": { "level": "ignore" },
+  "no_implicit_braces":             { "level": "ignore", "strict": true },
+  "no_implicit_parens":             { "level": "ignore", "strict": true },
+  "no_plusplus":                    { "level": "ignore" },
+  "no_trailing_whitespace":         { "level": "ignore", 
+                                      "allowed_in_comments": true, 
+                                      "allowed_in_empty_lines": true },
+  "non_empty_constructor_needs_parens": { "level": "ignore" }
+}

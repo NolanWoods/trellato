@@ -3,7 +3,6 @@
 	<meta charset="utf-8"><title>Trellato</title>
 	<link rel="stylesheet" type="text/css" href="styles.css" inline />
 </head><body ng-app="trellato" ng-controller="mainCtrl">
-
 	<button ng-hide='trello.isLoggedIn' ng-click='login()'>Connect to Trello</button>
 	<div ng-if='trello.isLoggedIn'>
 	<div>
@@ -52,10 +51,10 @@
 		<div style='clear: left'></div>
 	</div>
 	</div>
-	<script src="lib.js"></script>
+	<!-- inject:vendor:js--><!-- endinject-->
 	<script type="text/javascript" src="https://api.trello.com/1/client.js?key=%TRELLO_API_KEY%"></script>
 	<script type="text/javascript">
 		window.orgId = '%ORG_ID%';
 	</script>
-	<script src="app.js"></script>	
+	<!-- inject:app:js--><!-- endinject-->
 </body></html>
